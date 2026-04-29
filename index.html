@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ministério Altar - Repertório</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome para ícones profissionais -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <h1><i class="fas fa-guitar"></i> Ministério Altar</h1>
+            <button class="hamburger" id="hamburger-btn" aria-label="Abrir menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <nav class="main-nav" id="main-nav">
+                <a href="#" id="nav-home" class="active">Início</a>
+                <a href="#" id="nav-repertoire">Repertório</a>
+                <a href="#" id="nav-mylist">Minha Lista</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="app" class="container">
+        <!-- Tela de Início -->
+        <section id="home-view" class="view">
+            <div class="welcome-box">
+                <h2>Bem-vindo ao Nosso Altar</h2>
+                <p>Este é o espaço dedicado à organização das nossas ministrações. Explore os ministérios e prepare-se para o louvor.</p>
+                <button class="btn-primary" id="btn-start-exploring">Explorar Repertório</button>
+            </div>
+        </section>
+
+        <!-- Tela de Cantores -->
+        <section id="singer-view" class="view hidden">
+            <h2 class="section-title">Cantores / Ministérios</h2>
+            <div id="singer-grid" class="grid-container"></div>
+        </section>
+
+        <!-- Tela de Músicas (Escondida por padrão) -->
+        <section id="song-view" class="view hidden">
+            <button id="back-button" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</button>
+            <h2 id="current-singer-name" class="section-title">Músicas</h2>
+            <ul id="song-list" class="list-container"></ul>
+        </section>
+
+        <!-- Tela de Minha Lista -->
+        <section id="mylist-view" class="view hidden">
+            <div class="list-header">
+                <h2 class="section-title">Minha Seleção</h2>
+                <button id="btn-whatsapp" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> Compartilhar</button>
+            </div>
+            <ul id="mylist-container" class="list-container"></ul>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Ministério Altar. Todos os direitos reservados a Lucas Henrique</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
