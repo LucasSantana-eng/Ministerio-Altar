@@ -1,10 +1,10 @@
 :root {
-    --bg-color: #0f0f0f;
-    --card-bg: #1e1e1e;
-    --accent-color: #8e44ad;
-    --accent-hover: #9b59b6;
+    --bg-color: #000000;
+    --card-bg: #121212;
+    --accent-color: #1DB954; /* Verde Spotify */
+    --accent-hover: #1ed760;
     --text-primary: #ffffff;
-    --text-secondary: #b3b3b3;
+    --text-secondary: #a7a7a7;
     --transition: all 0.3s ease;
 }
 
@@ -12,7 +12,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
 }
 
 body {
@@ -42,6 +42,32 @@ header h1 {
     letter-spacing: 2px;
 }
 
+/* Animação para o título do aplicativo */
+.app-title {
+    animation: pulse 2s infinite; /* Animação de pulso sutil */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02); /* Levemente maior */
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Ajuste para o header para centralizar melhor o título animado */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Garante que o botão hamburger e o título fiquem bem distribuídos */
+    gap: 10px; /* Espaçamento entre os itens */
+}
+
+
 .header-content {
     display: flex;
     flex-direction: column;
@@ -62,6 +88,11 @@ header h1 {
     padding: 5px 0;
     transition: var(--transition);
     border-bottom: 2px solid transparent;
+}
+
+/* Ajuste para o ícone da guitarra dentro do título */
+.app-title .fas.fa-guitar {
+    margin-right: 10px; /* Espaçamento entre o ícone e o texto */
 }
 
 .main-nav a:hover, .main-nav a.active {
@@ -138,7 +169,7 @@ header h1 {
     border: 1px solid transparent;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     gap: 15px;
 }
 
@@ -158,6 +189,7 @@ header h1 {
     background-color: var(--card-bg);
     border-radius: 12px;
     overflow: hidden;
+    margin-bottom: 100px;
 }
 
 .list-item {
@@ -222,6 +254,81 @@ header h1 {
 .remove-btn:hover {
     background-color: rgba(231, 76, 60, 0.1);
     border-color: #e74c3c;
+}
+
+/* Estilização da Barra de Player (Spotify Style) */
+.player-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #000;
+    border-top: 1px solid #121212;
+    padding: 15px 0;
+    z-index: 2000;
+}
+
+.player-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+}
+
+.now-playing {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.player-cover-box {
+    width: 56px;
+    height: 56px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #282828;
+}
+
+.player-cover-box i {
+    color: var(--accent-color);
+    font-size: 1.5rem;
+}
+
+.song-info-mini {
+    display: flex;
+    flex-direction: column;
+}
+
+#player-song-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.player-controls {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    justify-self: center;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.control-btn:hover {
+    color: white;
+}
+
+.main-play {
+    color: white;
+    font-size: 1.8rem;
 }
 
 .btn-back {

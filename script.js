@@ -637,13 +637,25 @@ const hamburgerBtn = document.getElementById('hamburger-btn');
 const btnWhatsapp = document.getElementById('btn-whatsapp');
 const btnStart = document.getElementById('btn-start-exploring');
 
+// Novos seletores do Player
+const playerBar = document.getElementById('player-bar');
+const playerSongTitle = document.getElementById('player-song-title');
+const playerSingerName = document.getElementById('player-singer-name');
+const btnPlayPause = document.getElementById('btn-play-pause');
+const btnStop = document.getElementById('btn-stop');
+
 /**
  * FUNÇÃO DE BACK-END: Busca e toca o áudio
  */
-async function tocarMusica(nomeMusica) {
-    // Alerta visual de carregamento (opcional)
-    console.log(`Buscando: ${nomeMusica}`);
-    
+async function tocarMusica(nomeMusica, nomeCantor) {
+    if (audioPlayer.src.includes(encodeURIComponent(nomeMusica)) && !audioPlayer.paused) {
+        audioPlayer.pause();
+        return;
+    } else if (audioPlayer.src.includes(encodeURIComponent(nomeMusica)) && audioPlayer.paused) {
+        audioPlayer.play();
+        return;
+    }
+
     const { data, error } = await _supabase
         .from('repertorio')
         .select('link_audio')
@@ -655,8 +667,59 @@ async function tocarMusica(nomeMusica) {
         return;
     }
 
+    // Atualiza Interface do Player
+    playerSongTitle.innerText = nomeMusica;
+    playerSingerName.innerText = nomeCantor || "Artista";
+    playerBar.classList.remove('hidden');
+
+    // Media Session API (Controle em Segundo Plano)
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: nomeMusica,
+            artist: nomeCantor || "Ministério Altar",
+            artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3844/3844720.png', sizes: '512x512', type: 'image/png' }]
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
+        navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
+        navigator.mediaSession.setActionHandler('stop', () => stopAudio());
+    }
+
     audioPlayer.src = data.link_audio;
     audioPlayer.play();
+}
+
+function stopAudio() {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+    playerBar.classList.add('hidden');
+}
+
+/**
+ * Controladores do Player Global
+ */
+btnPlayPause.addEventListener('click', () => {
+    if (audioPlayer.paused) audioPlayer.play();
+    else audioPlayer.pause();
+});
+
+btnStop.addEventListener('click', stopAudio);
+
+audioPlayer.addEventListener('play', () => {
+    btnPlayPause.innerHTML = '<i class="fas fa-pause"></i>';
+});
+
+audioPlayer.addEventListener('pause', () => {
+    btnPlayPause.innerHTML = '<i class="fas fa-play"></i>';
+});
+
+audioPlayer.addEventListener('ended', () => playerBar.classList.add('hidden'));
+
+// Registro do Service Worker (PWA)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('Erro SW:', err));
+    });
 }
 
 /**
@@ -722,7 +785,7 @@ function renderMyList() {
             </button>
         `;
         
-        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(item.musica));
+        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(item.musica, item.cantor));
         li.querySelector('.remove-btn').addEventListener('click', () => removeFromMyList(index));
         mylistContainer.appendChild(li);
     });
@@ -773,7 +836,7 @@ function showSongs(index) {
         `;
 
         // BOTÃO DE PLAY CONECTADO AO SUPABASE
-        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(musica));
+        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(musica, data.cantor));
 
         li.querySelector('.add-btn').addEventListener('click', (e) => {
             e.stopPropagation();
