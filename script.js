@@ -1,4 +1,14 @@
 /**
+ * CONFIGURAÇÃO DO BACK-END (SUPABASE)
+ * Substitua os valores abaixo pelos que você encontrar em: 
+ * Settings -> API no seu painel do Supabase
+ */
+const SUPABASE_URL = 'https://ebgabvvqmoseywkucqoa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_lOLm0UYc8s9yxIcVeE6tVw_ojnxxgrN';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Player de áudio global
+const audioPlayer = new Audio();/**
  * Estrutura de dados centralizada do repertório
  */
 const repertorio = [
@@ -628,16 +638,34 @@ const btnWhatsapp = document.getElementById('btn-whatsapp');
 const btnStart = document.getElementById('btn-start-exploring');
 
 /**
+ * FUNÇÃO DE BACK-END: Busca e toca o áudio
+ */
+async function tocarMusica(nomeMusica) {
+    // Alerta visual de carregamento (opcional)
+    console.log(`Buscando: ${nomeMusica}`);
+    
+    const { data, error } = await _supabase
+        .from('repertorio')
+        .select('link_audio')
+        .eq('titulo', nomeMusica)
+        .single();
+
+    if (error || !data) {
+        alert("Áudio ainda não disponível para esta música no sistema.");
+        return;
+    }
+
+    audioPlayer.src = data.link_audio;
+    audioPlayer.play();
+}
+
+/**
  * Gerencia a visibilidade das telas
  */
 function switchView(viewId) {
-    // Esconde todas as telas
     document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
-    
-    // Remove o 'active' de todos os links
     document.querySelectorAll('.main-nav a').forEach(link => link.classList.remove('active'));
 
-    // Fecha o menu hamburguer ao navegar (mobile)
     mainNav.classList.remove('active');
     const icon = hamburgerBtn.querySelector('i');
     icon.classList.add('fa-bars');
@@ -658,12 +686,8 @@ function switchView(viewId) {
     }
 }
 
-/**
- * Adiciona uma música à lista pessoal
- */
 function addToMyList(cantor, musica) {
     const jaExiste = minhaLista.some(item => item.musica === musica && item.cantor === cantor);
-    
     if (!jaExiste) {
         minhaLista.push({ cantor, musica });
         alert(`"${musica}" adicionada à sua lista!`);
@@ -672,20 +696,13 @@ function addToMyList(cantor, musica) {
     }
 }
 
-/**
- * Remove uma música da lista pessoal
- */
 function removeFromMyList(index) {
     minhaLista.splice(index, 1);
     renderMyList();
 }
 
-/**
- * Renderiza a tela de "Minha Lista"
- */
 function renderMyList() {
     mylistContainer.innerHTML = '';
-
     if (minhaLista.length === 0) {
         mylistContainer.innerHTML = '<p style="padding: 20px; color: var(--text-secondary);">Nenhuma música selecionada ainda.</p>';
         return;
@@ -704,51 +721,38 @@ function renderMyList() {
                 <i class="fas fa-trash-can"></i>
             </button>
         `;
-
-        li.querySelector('.remove-btn').addEventListener('click', () => removeFromMyList(index));
         
+        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(item.musica));
+        li.querySelector('.remove-btn').addEventListener('click', () => removeFromMyList(index));
         mylistContainer.appendChild(li);
     });
 }
 
-/**
- * Envia a lista atual por WhatsApp formatada
- */
 function sendToWhatsApp() {
     if (minhaLista.length === 0) {
-        alert("Sua lista está vazia! Adicione algumas músicas primeiro.");
+        alert("Sua lista está vazia!");
         return;
     }
-
-    // Geração da string formatada conforme requisitos específicos
     let mensagem = "*Repertório selecionado*:\n\n";
     minhaLista.forEach((item) => {
         mensagem += `- *${item.musica}* — ${item.cantor}\n`;
     });
-    
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
 }
 
-/**
- * Renderiza a lista de cantores na tela inicial
- */
 function renderSingers() {
     singerGrid.innerHTML = '';
     repertorio.forEach((item, index) => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `
-            <i class="fas fa-microphone-lines"></i>
-            <span>${item.cantor}</span>
-        `;
+        card.innerHTML = `<i class="fas fa-microphone-lines"></i><span>${item.cantor}</span>`;
         card.addEventListener('click', () => showSongs(index));
         singerGrid.appendChild(card);
     });
 }
 
 /**
- * Transiciona para a tela de músicas do cantor selecionado
+ * Transiciona para a tela de músicas e ativa o Play Real
  */
 function showSongs(index) {
     const data = repertorio[index];
@@ -768,17 +772,10 @@ function showSongs(index) {
             </button>
         `;
 
-        // Lógica futura para o player
-        const btnPlay = li.querySelector('.play-btn');
-        btnPlay.addEventListener('click', () => {
-            console.log(`Preparando para reproduzir: ${musica} de ${data.cantor}`);
-            // Aqui entrará a lógica do seu player de áudio (ex: player.src = ...; player.play();)
-            alert(`Funcionalidade de áudio para "${musica}" será implementada no backend.`);
-        });
+        // BOTÃO DE PLAY CONECTADO AO SUPABASE
+        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(musica));
 
-        // Lógica para o botão de +
-        const btnAdd = li.querySelector('.add-btn');
-        btnAdd.addEventListener('click', (e) => {
+        li.querySelector('.add-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             addToMyList(data.cantor, musica);
         });
@@ -789,36 +786,18 @@ function showSongs(index) {
     switchView('songs');
 }
 
-// Evento de voltar
+// Eventos de Navegação e Cliques
 btnBack.addEventListener('click', () => switchView('repertoire'));
-
-// Eventos de Navegação
-navHome.addEventListener('click', (e) => {
-    e.preventDefault();
-    switchView('home');
-});
-
-navRepertoire.addEventListener('click', (e) => {
-    e.preventDefault();
-    switchView('repertoire');
-});
-
-navMylist.addEventListener('click', (e) => {
-    e.preventDefault();
-    switchView('mylist');
-});
-
-// Toggle do Menu Hamburguer
+navHome.addEventListener('click', (e) => { e.preventDefault(); switchView('home'); });
+navRepertoire.addEventListener('click', (e) => { e.preventDefault(); switchView('repertoire'); });
+navMylist.addEventListener('click', (e) => { e.preventDefault(); switchView('mylist'); });
 hamburgerBtn.addEventListener('click', () => {
     mainNav.classList.toggle('active');
     const icon = hamburgerBtn.querySelector('i');
     icon.classList.toggle('fa-bars');
     icon.classList.toggle('fa-xmark');
 });
-
 btnWhatsapp.addEventListener('click', sendToWhatsApp);
-
 btnStart.addEventListener('click', () => switchView('repertoire'));
 
-// Inicialização
 document.addEventListener('DOMContentLoaded', renderSingers);
