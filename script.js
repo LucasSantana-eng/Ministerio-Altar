@@ -801,3 +801,5 @@ btnWhatsapp.addEventListener('click', sendToWhatsApp);
 btnStart.addEventListener('click', () => switchView('repertoire'));
 
 document.addEventListener('DOMContentLoaded', renderSingers);
+
+//teste
