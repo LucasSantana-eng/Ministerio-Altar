@@ -718,7 +718,7 @@ audioPlayer.addEventListener('ended', () => playerBar.classList.add('hidden'));
 // Registro do Service Worker (PWA)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('Erro SW:', err));
+        navigator.serviceWorker.register('service-worker.js').catch(err => console.log('Erro SW:', err));
     });
 }
 

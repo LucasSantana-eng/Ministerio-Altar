@@ -44,18 +44,20 @@ header h1 {
 
 /* Animação para o título do aplicativo */
 .app-title {
-    animation: pulse 2s infinite; /* Animação de pulso sutil */
+    animation: brandGlow 4s ease-in-out infinite;
+    display: inline-block;
+    transition: var(--transition);
 }
 
-@keyframes pulse {
-    0% {
+@keyframes brandGlow {
+    0%, 100% {
         transform: scale(1);
+        filter: drop-shadow(0 0 0px var(--accent-color));
     }
     50% {
-        transform: scale(1.02); /* Levemente maior */
-    }
-    100% {
-        transform: scale(1);
+        transform: scale(1.04);
+        filter: drop-shadow(0 0 10px var(--accent-color));
+        color: var(--accent-hover);
     }
 }
 
