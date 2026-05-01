@@ -35,7 +35,7 @@ const repertorio = [
     },
     { 
         cantor: "Alessandro Vilas Boas", 
-        musicas: ["Deixa Queimar", "Quero Conhecer Jesus", "O Carpinteiro", "O Fogo Nunca Dorme"] 
+        musicas: ["Deixa Queimar", "Quero Conhecer Jesus", "O Carpinteiro", "O Fogo Nunca Dorme", "Ser Mudado", "Aleluia"] 
     },
     { 
         cantor: "Aline Barros", 
