@@ -1,15 +1,16 @@
 /**
  * CONFIGURAÇÃO DO BACK-END (SUPABASE)
- * Substitua os valores abaixo pelos que você encontrar em: 
- * Settings -> API no seu painel do Supabase
  */
 const SUPABASE_URL = 'https://ebgabvvqmoseywkucqoa.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lOLm0UYc8s9yxIcVeE6tVw_ojnxxgrN';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Player de áudio global
-const audioPlayer = new Audio();/**
- * Estrutura de dados centralizada do repertório
+const audioPlayer = new Audio();
+
+/**
+ * ESTRUTURA DE DADOS CENTRALIZADA
+ * Certifique-se de que o nome em 'cantor' seja idêntico ao da coluna 'artista' no Supabase.
  */
 const repertorio = [
     { 
@@ -615,7 +616,8 @@ const repertorio = [
 ];
 
 // Estado da aplicação
-let minhaLista = [];
+let minhaLista = JSON.parse(localStorage.getItem('minhaListaRepertorio')) || [];
+let musicaAtualId = null; 
 
 // Seletores do DOM
 const homeView = document.getElementById('home-view');
@@ -627,221 +629,107 @@ const songList = document.getElementById('song-list');
 const mylistContainer = document.getElementById('mylist-container');
 const currentSingerName = document.getElementById('current-singer-name');
 const btnBack = document.getElementById('back-button');
-
-// Seletores de Navegação
-const navHome = document.getElementById('nav-home');
-const navRepertoire = document.getElementById('nav-repertoire');
-const navMylist = document.getElementById('nav-mylist');
-const mainNav = document.getElementById('main-nav');
-const hamburgerBtn = document.getElementById('hamburger-btn');
-const btnWhatsapp = document.getElementById('btn-whatsapp');
-const btnStart = document.getElementById('btn-start-exploring');
-
-// Novos seletores do Player
 const playerBar = document.getElementById('player-bar');
+const btnStartExploring = document.getElementById('btn-start-exploring');
+const btnWhatsapp = document.getElementById('btn-whatsapp');
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const mainNav = document.getElementById('main-nav');
+const navLinks = { home: 'nav-home', repertoire: 'nav-repertoire', mylist: 'nav-mylist' };
+
 const playerSongTitle = document.getElementById('player-song-title');
 const playerSingerName = document.getElementById('player-singer-name');
 const btnPlayPause = document.getElementById('btn-play-pause');
 const btnStop = document.getElementById('btn-stop');
 
 /**
- * FUNÇÃO DE BACK-END: Busca e toca o áudio
+ * FUNÇÃO DE REPRODUÇÃO ATUALIZADA
+ * Busca no banco de dados usando Título E Artista para precisão total.
  */
 async function tocarMusica(nomeMusica, nomeCantor) {
-    if (audioPlayer.src.includes(encodeURIComponent(nomeMusica)) && !audioPlayer.paused) {
-        audioPlayer.pause();
+    // Lógica de Play/Pause se clicar na mesma música
+    if (musicaAtualId === nomeMusica + nomeCantor) {
+        if (audioPlayer.paused) {
+            audioPlayer.play();
+        } else {
+            audioPlayer.pause();
+        }
         return;
-    } else if (audioPlayer.src.includes(encodeURIComponent(nomeMusica)) && audioPlayer.paused) {
+    }
+
+    try {
+        // Busca filtrada por duas colunas para evitar homônimos
+        const { data, error } = await _supabase
+            .from('repertorio')
+            .select('link_audio, titulo, artista')
+            .eq('titulo', nomeMusica)
+            .eq('artista', nomeCantor) 
+            .single();
+
+        if (error || !data) {
+            console.error("Erro ao buscar no Supabase:", error);
+            alert("Áudio não encontrado para esta seleção.");
+            return;
+        }
+
+        // Atualiza estado e interface
+        musicaAtualId = nomeMusica + nomeCantor;
+        playerSongTitle.innerText = data.titulo;
+        playerSingerName.innerText = data.artista;
+        playerBar.classList.remove('hidden');
+
+        // Configura o áudio
+        audioPlayer.src = data.link_audio;
         audioPlayer.play();
-        return;
+
+        // Integração com controles de mídia do celular/PC
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: data.titulo,
+                artist: data.artista,
+                artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3844/3844720.png', sizes: '512x512', type: 'image/png' }]
+            });
+        }
+    } catch (err) {
+        console.error("Erro inesperado:", err);
     }
-
-    const { data, error } = await _supabase
-        .from('repertorio')
-        .select('link_audio')
-        .eq('titulo', nomeMusica)
-        .single();
-
-    if (error || !data) {
-        alert("Áudio ainda não disponível para esta música no sistema.");
-        return;
-    }
-
-    // Atualiza Interface do Player
-    playerSongTitle.innerText = nomeMusica;
-    playerSingerName.innerText = nomeCantor || "Artista";
-    playerBar.classList.remove('hidden');
-
-    // Media Session API (Controle em Segundo Plano)
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: nomeMusica,
-            artist: nomeCantor || "Ministério Altar",
-            artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3844/3844720.png', sizes: '512x512', type: 'image/png' }]
-        });
-
-        navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
-        navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
-        navigator.mediaSession.setActionHandler('stop', () => stopAudio());
-    }
-
-    audioPlayer.src = data.link_audio;
-    audioPlayer.play();
-}
-
-function stopAudio() {
-    audioPlayer.pause();
-    audioPlayer.currentTime = 0;
-    playerBar.classList.add('hidden');
 }
 
 /**
- * Controladores do Player Global
+ * RENDERIZAÇÃO E NAVEGAÇÃO
  */
-btnPlayPause.addEventListener('click', () => {
-    if (audioPlayer.paused) audioPlayer.play();
-    else audioPlayer.pause();
-});
-
-btnStop.addEventListener('click', stopAudio);
-
-audioPlayer.addEventListener('play', () => {
-    btnPlayPause.innerHTML = '<i class="fas fa-pause"></i>';
-});
-
-audioPlayer.addEventListener('pause', () => {
-    btnPlayPause.innerHTML = '<i class="fas fa-play"></i>';
-});
-
-audioPlayer.addEventListener('ended', () => playerBar.classList.add('hidden'));
-
-// Registro do Service Worker (PWA)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js').catch(err => console.log('Erro SW:', err));
-    });
-}
-
-/**
- * Gerencia a visibilidade das telas
- */
-function switchView(viewId) {
-    document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
-    document.querySelectorAll('.main-nav a').forEach(link => link.classList.remove('active'));
-
-    mainNav.classList.remove('active');
-    const icon = hamburgerBtn.querySelector('i');
-    icon.classList.add('fa-bars');
-    icon.classList.remove('fa-xmark');
-
-    if (viewId === 'home') {
-        homeView.classList.remove('hidden');
-        navHome.classList.add('active');
-    } else if (viewId === 'repertoire') {
-        singerView.classList.remove('hidden');
-        navRepertoire.classList.add('active');
-    } else if (viewId === 'songs') {
-        songView.classList.remove('hidden');
-    } else if (viewId === 'mylist') {
-        mylistView.classList.remove('hidden');
-        navMylist.classList.add('active');
-        renderMyList();
-    }
-}
-
-function addToMyList(cantor, musica) {
-    const jaExiste = minhaLista.some(item => item.musica === musica && item.cantor === cantor);
-    if (!jaExiste) {
-        minhaLista.push({ cantor, musica });
-        alert(`"${musica}" adicionada à sua lista!`);
-    } else {
-        alert("Esta música já está na sua lista.");
-    }
-}
-
-function removeFromMyList(index) {
-    minhaLista.splice(index, 1);
-    renderMyList();
-}
-
-function renderMyList() {
-    mylistContainer.innerHTML = '';
-    if (minhaLista.length === 0) {
-        mylistContainer.innerHTML = '<p style="padding: 20px; color: var(--text-secondary);">Nenhuma música selecionada ainda.</p>';
-        return;
-    }
-
-    minhaLista.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.className = 'list-item';
-        li.innerHTML = `
-            <button class="play-btn"><i class="fas fa-play"></i></button>
-            <div class="song-info">
-                <div class="song-name">${item.musica}</div>
-                <small style="color: var(--text-secondary)">${item.cantor}</small>
-            </div>
-            <button class="add-btn remove-btn" title="Remover">
-                <i class="fas fa-trash-can"></i>
-            </button>
-        `;
-        
-        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(item.musica, item.cantor));
-        li.querySelector('.remove-btn').addEventListener('click', () => removeFromMyList(index));
-        mylistContainer.appendChild(li);
-    });
-}
-
-function sendToWhatsApp() {
-    if (minhaLista.length === 0) {
-        alert("Sua lista está vazia!");
-        return;
-    }
-    let mensagem = "*Repertório selecionado*:\n\n";
-    minhaLista.forEach((item) => {
-        mensagem += `- *${item.musica}* — ${item.cantor}\n`;
-    });
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
-}
-
 function renderSingers() {
     singerGrid.innerHTML = '';
     repertorio.forEach((item, index) => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `<i class="fas fa-microphone-lines"></i><span>${item.cantor}</span>`;
-        card.addEventListener('click', () => showSongs(index));
+        card.innerHTML = `
+            <i class="fas fa-microphone-lines"></i>
+            <h3 style="margin-top:10px">${item.cantor}</h3>
+        `;
+        card.onclick = () => showSongs(index);
         singerGrid.appendChild(card);
     });
 }
 
-/**
- * Transiciona para a tela de músicas e ativa o Play Real
- */
 function showSongs(index) {
     const data = repertorio[index];
-    currentSingerName.innerText = `Músicas: ${data.cantor}`;
+    currentSingerName.innerText = data.cantor;
     songList.innerHTML = '';
 
     data.musicas.forEach(musica => {
         const li = document.createElement('li');
         li.className = 'list-item';
         li.innerHTML = `
-            <button class="play-btn" title="Ouvir ${musica}">
-                <i class="fas fa-play"></i>
-            </button>
-            <span class="song-name">${musica}</span>
-            <button class="add-btn" title="Adicionar à lista">
-                <i class="fas fa-plus"></i>
-            </button>
+            <div class="song-info">
+                <button class="play-btn"><i class="fas fa-play"></i></button>
+                <span class="song-name">${musica}</span>
+            </div>
+            <button class="add-btn"><i class="fas fa-plus"></i></button>
         `;
 
-        // BOTÃO DE PLAY CONECTADO AO SUPABASE
-        li.querySelector('.play-btn').addEventListener('click', () => tocarMusica(musica, data.cantor));
-
-        li.querySelector('.add-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            addToMyList(data.cantor, musica);
-        });
+        // Passa música e cantor para a função de busca
+        li.querySelector('.play-btn').onclick = () => tocarMusica(musica, data.cantor);
+        li.querySelector('.add-btn').onclick = () => addToMyList(data.cantor, musica);
 
         songList.appendChild(li);
     });
@@ -849,18 +737,100 @@ function showSongs(index) {
     switchView('songs');
 }
 
-// Eventos de Navegação e Cliques
-btnBack.addEventListener('click', () => switchView('repertoire'));
-navHome.addEventListener('click', (e) => { e.preventDefault(); switchView('home'); });
-navRepertoire.addEventListener('click', (e) => { e.preventDefault(); switchView('repertoire'); });
-navMylist.addEventListener('click', (e) => { e.preventDefault(); switchView('mylist'); });
-hamburgerBtn.addEventListener('click', () => {
-    mainNav.classList.toggle('active');
-    const icon = hamburgerBtn.querySelector('i');
-    icon.classList.toggle('fa-bars');
-    icon.classList.toggle('fa-xmark');
-});
-btnWhatsapp.addEventListener('click', sendToWhatsApp);
-btnStart.addEventListener('click', () => switchView('repertoire'));
+/**
+ * GESTÃO DA "MINHA LISTA"
+ */
+function addToMyList(cantor, musica) {
+    const jaExiste = minhaLista.find(item => item.cantor === cantor && item.musica === musica);
+    if (!jaExiste) {
+        minhaLista.push({ cantor, musica });
+        saveList();
+        alert(`${musica} adicionada!`);
+    } else {
+        alert("Esta música já está na sua lista.");
+    }
+}
 
-document.addEventListener('DOMContentLoaded', renderSingers);
+function renderMyList() {
+    mylistContainer.innerHTML = '';
+    if (minhaLista.length === 0) {
+        mylistContainer.innerHTML = '<p style="text-align:center; padding:20px;">Sua lista está vazia.</p>';
+        return;
+    }
+
+    minhaLista.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <div class="song-info">
+                <button class="play-btn"><i class="fas fa-play"></i></button>
+                <div>
+                    <strong>${item.musica}</strong><br>
+                    <small>${item.cantor}</small>
+                </div>
+            </div>
+            <button class="remove-btn" onclick="removeFromList(${index})"><i class="fas fa-trash"></i></button>
+        `;
+        div.querySelector('.play-btn').onclick = () => tocarMusica(item.musica, item.cantor);
+        mylistContainer.appendChild(div);
+    });
+}
+
+function removeFromList(index) {
+    minhaLista.splice(index, 1);
+    saveList();
+    renderMyList();
+}
+
+function saveList() {
+    localStorage.setItem('minhaListaRepertorio', JSON.stringify(minhaLista));
+}
+
+/**
+ * CONTROLES DO PLAYER E INTERFACE
+ */
+function switchView(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.querySelectorAll('.main-nav a').forEach(a => a.classList.remove('active'));
+
+    if (viewId === 'home') homeView.classList.remove('hidden');
+    if (viewId === 'repertoire') singerView.classList.remove('hidden');
+    if (viewId === 'songs') songView.classList.remove('hidden');
+    if (viewId === 'mylist') {
+        mylistView.classList.remove('hidden');
+        renderMyList();
+    }
+}
+
+btnPlayPause.onclick = () => {
+    if (audioPlayer.paused) audioPlayer.play();
+    else audioPlayer.pause();
+};
+
+btnStop.onclick = () => {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+    musicaAtualId = null;
+    playerBar.classList.add('hidden');
+};
+
+audioPlayer.onplay = () => btnPlayPause.innerHTML = '<i class="fas fa-pause"></i>';
+audioPlayer.onpause = () => btnPlayPause.innerHTML = '<i class="fas fa-play"></i>';
+
+// Inicialização ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    renderSingers();
+    
+    // Listeners de Navegação
+    document.getElementById(navLinks.home).onclick = (e) => { e.preventDefault(); switchView('home'); };
+    document.getElementById(navLinks.repertoire).onclick = (e) => { e.preventDefault(); switchView('repertoire'); };
+    document.getElementById(navLinks.mylist).onclick = (e) => { e.preventDefault(); switchView('mylist'); };
+    
+    // Botões de Ação
+    btnStartExploring.onclick = () => switchView('repertoire');
+    btnBack.onclick = () => switchView('repertoire');
+    btnWhatsapp.onclick = compartilharWhatsapp;
+    
+    // Menu Mobile
+    hamburgerBtn.onclick = () => mainNav.classList.toggle('active');
+});
